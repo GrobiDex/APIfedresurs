@@ -8,6 +8,7 @@ url = 'https://services.fedresurs.ru/SignificantEvents/MessagesServiceDemo2/v1/'
 # Логин и пароль для авторизации
 login = 'demo'
 password = 'Ax!761BN'
+session = requests.Session()
 
 # Функция для проверки и очистки введенного ИНН
 def process_inn():
@@ -25,12 +26,12 @@ password_hash = hashlib.sha512(password.encode('utf-8')).hexdigest()
 params = {'login': login, 'passwordHash': password_hash}
 
 # Отправка POST-запроса для получения авторизационного токена
-response = requests.post(url + 'auth', data=json.dumps(params), headers={'Content-Type': 'application/json'})
+response = session.post(url + 'auth', data=json.dumps(params), headers={'Content-Type': 'application/json'})
 
 # Извлечение токена из ответа
 if response.status_code == requests.codes.ok:
     token = response.json()
-    headers = {'Authorization': 'Bearer ' + token['jwt']}
+    session.headers.update({'Authorization': 'Bearer ' + token['jwt']})
     print('Токен получен')
 else:
     print('Не удалось получить токен авторизации. Код ошибки: %d' % response.status_code)
@@ -38,28 +39,18 @@ else:
     headers = {}
 
 inn = process_inn()
-
+# 'participant.type': ['Company', 'IndividualEntrepreneur', 'Person', 'Appraiser'],
 query = {
-    'messageTypes': 'AnyOther',
-    'participant.type': 'LegalEntity',
-    'participant.code': '1027700109271',
+    'messageTypes': ['AnyOther', 'FinancialLeaseContract'],
+    'participant.type': ['Company', 'IndividualEntrepreneur', 'Person', 'Appraiser'],
+    'participant.code': inn,
     'limit': 20,
     'offset': 0
 }
 
 # Отправка запроса на контур
 
-response = requests.get(url + 'messages', headers=headers, params=query)
-response.raise_for_status()
-if response.status_code == requests.codes.ok:
-    messages = response.json()['messages']
-    if messages:
-        for message in messages:
-            print(message['guid'])
-            print(message['participants'])
-            print(message['datePublish'])
-            print(message['messageType']['name'])
-    else:
-        print('Сообщения не найдены')
-else:
-    print('Не удалось получить список сообщений. Код ошибки: %d' % response.status_code)
+response = session.get(url + 'messages', params=query)
+print(response.url)
+print(response.status_code)
+print(response.json())
