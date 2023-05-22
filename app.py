@@ -41,12 +41,13 @@ inn = process_inn()
 
 query = {
     'messageTypes': 'AnyOther',
-    'messageTypes': 'FinancialLeaseContract',
     'participant.type': 'LegalEntity',
-    'participant.code': '364113334012',
+    'participant.code': '1027700109271',
     'limit': 20,
     'offset': 0
 }
+
+# Отправка запроса на контур
 
 response = requests.get(url + 'messages', headers=headers, params=query)
 response.raise_for_status()
