@@ -22,20 +22,15 @@ def process_inn():
 password_hash = hashlib.sha512(password.encode('utf-8')).hexdigest()
 
 # Параметры запроса на авторизацию
-params = {
-    'login': login,
-    'passwordHash': password_hash
-}
+params = {'login': login, 'passwordHash': password_hash}
 
 # Отправка POST-запроса для получения авторизационного токена
 response = requests.post(url + 'auth', data=json.dumps(params), headers={'Content-Type': 'application/json'})
 
 # Извлечение токена из ответа
 if response.status_code == requests.codes.ok:
-    token = response.content.decode('utf-8')
-    headers = {
-        'Authorization': 'Bearer ' + token
-    }
+    token = response.json()
+    headers = {'Authorization': 'Bearer ' + token['jwt']}
     print('Токен получен')
 else:
     print('Не удалось получить токен авторизации. Код ошибки: %d' % response.status_code)
@@ -47,19 +42,23 @@ inn = process_inn()
 query = {
     'messageTypes': 'AnyOther',
     'messageTypes': 'FinancialLeaseContract',
-    'participant.type': 'Company',
-    'participant.code': '1027700109271',
+    'participant.type': 'LegalEntity',
+    'participant.code': '364113334012',
     'limit': 20,
     'offset': 0
 }
 
-response = requests.get(url + 'message', headers=headers, params=query)
+response = requests.get(url + 'messages', headers=headers, params=query)
 response.raise_for_status()
-messages = response.json()['data']
-
-for message in messages:
-    print(message['messageGuid'])
-    print(message['participantCode'])
-    print(message['datePublish'])
-    print(message['messageTypeName'])
-    print(message['messageText'])    
+if response.status_code == requests.codes.ok:
+    messages = response.json()['messages']
+    if messages:
+        for message in messages:
+            print(message['guid'])
+            print(message['participants'])
+            print(message['datePublish'])
+            print(message['messageType']['name'])
+    else:
+        print('Сообщения не найдены')
+else:
+    print('Не удалось получить список сообщений. Код ошибки: %d' % response.status_code)
